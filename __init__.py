@@ -1,1 +1,1 @@
-from _cdd import *
+from ._cdd import *

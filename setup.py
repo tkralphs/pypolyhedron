@@ -1,30 +1,24 @@
 #!/usr/bin/env python
 
+from setuptools import setup, Extension
 import os
 
-def configuration(parent_package=None,top_path=None):
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration('polyhedron',parent_package,top_path)
-    cddlib_dir = 'cddlib-094d-p1'
-    sources = ['cddcore.c','cddlp.c','cddmp.c','cddio.c',
-               'cddlib.c','cddproj.c','setoper.c'
-               ]
-    sources = [os.path.join(cddlib_dir,'lib-src',fn) for fn in sources]
-    include_dirs = [os.path.join(cddlib_dir,'lib-src')]
-    config.add_library('cddlib',
-                       sources = sources,
-                       include_dirs = include_dirs
-                       )
+cdd_dir = 'cddlib-094d-p1'
+sources = ['cddcore.c','cddlp.c','cddmp.c','cddio.c',
+           'cddlib.c','cddproj.c','setoper.c']
+cdd_sources = [os.path.join(cdd_dir,'lib-src',fn) for fn in sources]
+cdd_sources.append(os.path.join('src','_cddmodule.c'))
+include_dirs = [os.path.join(cdd_dir,'lib-src')]
 
-    config.add_extension('_cdd',
-                         sources = [os.path.join('src','_cddmodule.c')],
-                         libraries = ['cddlib'],
-                         include_dirs = include_dirs
-                         )
-    return config
+modules=[Extension('_cdd', 
+                   cdd_sources, 
+                   include_dirs=include_dirs)]
 
-if __name__ == "__main__":
-    from numpy.distutils.core import setup
-    setup(configuration=configuration,
-          #package_dir='pypolyhedron',
-          version='0.2.1')
+setup(name='polyhedron',
+      version='0.3.0',
+      description='Python interface too cdd library',
+      author='Robin Deits',
+      author_email='rdeits@csail.mit.edu',
+      url='https://github.com/rdeits/pypolyhedron/',
+      ext_modules=modules
+)
