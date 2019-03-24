@@ -1,6 +1,9 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
 
 from numpy import *
-from polyhedron import Vrep, Hrep
+from .polyhedron import Vrep, Hrep
 
 points = random.random((20,3))
 
@@ -9,13 +12,13 @@ def mkhull(points):
     return Hrep(p.A, p.b)
 p = mkhull(points)
 
-print 'Hull vertices:\n',p.generators
+print('Hull vertices:\n',p.generators)
 
 points2 = 1.1*random.random((3,3))
 for i in range(len(points2)):
     # if all True then i-th point is in hull
     point = points2[i]
     if alltrue(dot(p.A,point) <= p.b):
-        print 'point',point,'is IN'
+        print('point',point,'is IN')
     else:
-        print 'point',point,'is OUT'
+        print('point',point,'is OUT')

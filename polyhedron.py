@@ -13,11 +13,15 @@ terms of the LGPL.  See http://www.fsf.org
 NO WARRANTY IS EXPRESSED OR IMPLIED.  USE AT YOUR OWN RISK.
 Pearu Peterson
 """
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+from builtins import object
 
 import _cdd
 import pprint
 
-class Polyhedron:
+class Polyhedron(object):
     def __init__(self):
         pass
     def __str__(self):
@@ -90,10 +94,10 @@ class Vrep(Polyhedron):
     
 if __name__ == "__main__":
     p = Hrep([[0,1],[1,0],[-1,-1],[0,-1]],[1,2,0,0])
-    print p
+    print(p)
     p = Vrep([[0,1],[1,0],[-1,-1],[0,-1]])
-    print p
+    print(p)
     p = Hrep([[0,1],[1,0],[0,-1]],[1,2,0.1])
-    print p
+    print(p)
     p = Hrep([[1,0],[0,-1]],[2,0.1],[0])
-    print p
+    print(p)

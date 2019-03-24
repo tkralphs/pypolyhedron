@@ -2,7 +2,7 @@
 
 import os
 
-def configuration(parent_package='',top_path=None):
+def configuration(parent_package=None,top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration('polyhedron',parent_package,top_path)
     cddlib_dir = 'cddlib-094d-p1'
@@ -17,7 +17,7 @@ def configuration(parent_package='',top_path=None):
                        )
 
     config.add_extension('_cdd',
-                         sources = ['_cddmodule.c'],
+                         sources = [os.path.join('src','_cddmodule.c')],
                          libraries = ['cddlib'],
                          include_dirs = include_dirs
                          )
@@ -26,4 +26,5 @@ def configuration(parent_package='',top_path=None):
 if __name__ == "__main__":
     from numpy.distutils.core import setup
     setup(configuration=configuration,
+          #package_dir='pypolyhedron',
           version='0.2.1')
