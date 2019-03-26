@@ -23,5 +23,6 @@ setup(name='pypolyhedron',
       url='https://github.com/rdeits/pypolyhedron/',
       packages=['pypolyhedron'],
       package_dir={'pypolyhedron':'src'},
+      install_requires=['numpy'],
       ext_modules=modules
 )

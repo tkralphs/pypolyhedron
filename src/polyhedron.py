@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from builtins import range
 from builtins import object
 
-from ._cdd import *
+from . import _cdd 
 import pprint
 
 class Polyhedron(object):
