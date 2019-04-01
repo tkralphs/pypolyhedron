@@ -1,1 +1,1 @@
-from polyhedron import *
+from .polyhedron import *
