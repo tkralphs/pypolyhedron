@@ -7,7 +7,9 @@ import numpy
 cdd_dir = os.path.join('src','cddlib-094d-p1')
 sources = ['cddcore.c','cddlp.c','cddmp.c','cddio.c',
            'cddlib.c','cddproj.c','setoper.c']
+headers = ['cdd.h', 'cddmp.h', 'cddtypes.h', 'setoper.h']
 cdd_sources = [os.path.join(cdd_dir,'lib-src',fn) for fn in sources]
+cdd_headers = [os.path.join(cdd_dir,'lib-src',fn) for fn in headers]
 cdd_sources.append(os.path.join('src','_cddmodule.c'))
 include_dirs = [os.path.join(cdd_dir,'lib-src'), numpy.get_include()]
 
@@ -16,7 +18,7 @@ modules=[Extension('pypolyhedron._cdd',
                    include_dirs=include_dirs)]
 
 setup(name='pypolyhedron',
-      version='0.3.2',
+      version='0.3.3',
       description='Python interface to cdd library',
       author='Robin Deits',
       author_email='rdeits@csail.mit.edu',
@@ -24,5 +26,5 @@ setup(name='pypolyhedron',
       packages=['pypolyhedron'],
       package_dir={'pypolyhedron':'src'},
       install_requires=['numpy'],
-      ext_modules=modules
+      ext_modules=modules,
 )
