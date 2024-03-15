@@ -18,7 +18,7 @@ modules=[Extension('pypolyhedron._cdd',
                    include_dirs=include_dirs)]
 
 setup(name='pypolyhedron',
-      version='0.3.3',
+      version='0.3.4',
       description='Python interface to cdd library',
       author='Robin Deits',
       author_email='rdeits@csail.mit.edu',
