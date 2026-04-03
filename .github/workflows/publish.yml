@@ -32,7 +32,7 @@ jobs:
 
       - name: Build and Publish
         run: |
-          uv build
+          uv build --sdist
           uv publish
           
       - name: Create GitHub Release
