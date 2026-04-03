@@ -1,9 +1,19 @@
 [build-system]
-requires = [
-  'setuptools',
-  'numpy >= 2.0'
-]
+requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypolyhedron"
+version = "0.3.6"
+description = "Front end to CDD"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy >= 2.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/tkralphs"
+Repository = "https://github.com/tkralphs/pypolyhedron"
 
 [dependency-groups]
 dev = [
