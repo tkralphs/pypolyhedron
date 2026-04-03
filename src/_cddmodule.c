@@ -181,8 +181,8 @@ static PyArrayObject *arr_from_pyobj(int type,npy_intp *dims,int rank,PyObject *
       CFUNCSMESS("arr_from_pyobj:  ContigiousFromObject unsuccesful\n");
   }
   if ((self == NULL) && PyArray_Check(obj)) { /* if could not cast safely in above */
-    int loc_rank = ((PyArrayObject *)obj)->nd;
-    npy_intp *loc_dims = ((PyArrayObject *)obj)->dimensions;
+    int loc_rank = PyArray_NDIM((PyArrayObject *)obj);
+    npy_intp *loc_dims = PyArray_DIMS((PyArrayObject *)obj);
     CFUNCSMESS("arr_from_pyobj: isarray(obj). Doing FromDims\n");
     /*self = (PyArrayObject *)PyArray_FromDims(loc_rank,loc_dims,type);*/
     self = (PyArrayObject *)PyArray_SimpleNew(loc_rank, loc_dims, type);
@@ -196,12 +196,12 @@ static PyArrayObject *arr_from_pyobj(int type,npy_intp *dims,int rank,PyObject *
     goto capi_fail;
   }
     self_cp = self;
-  if (!(rank==self->nd)) {
-    int u_dim = -1, dims_s = 1, self_s = (self->nd)?PyArray_Size((PyObject *)self):1;
+  if (!(rank==PyArray_NDIM(self))) {
+    int u_dim = -1, dims_s = 1, self_s = (PyArray_NDIM(self))?PyArray_Size((PyObject *)self):1;
     CFUNCSMESS("arr_from_pyobj: Mismatch of ranks. Trying to match.\n");
     CFUNCSMESS("arr_from_pyobj:");
 #ifdef DEBUGCFUNCS
-    fprintf(stderr,"rank=%d,self->nd=%d,dims=(",rank,self->nd);
+    fprintf(stderr,"rank=%d,self->nd=%d,dims=(",rank,PyArray_NDIM(self));
     for(i=0;i<rank;i++) fprintf(stderr," %"NPY_INTP_FMT,dims[i]);
     fprintf(stderr,")\n");
 #endif
@@ -216,37 +216,38 @@ static PyArrayObject *arr_from_pyobj(int type,npy_intp *dims,int rank,PyObject *
     }
     CFUNCSMESS("arr_from_pyobj:");
 #ifdef DEBUGCFUNCS
-    fprintf(stderr,"rank=%d,self->nd=%d,self_s=%d,dims_s=%d,dims=(",rank,self->nd,self_s,dims_s);
+    fprintf(stderr,"rank=%d,self->nd=%d,self_s=%d,dims_s=%d,dims=(",rank,PyArray_NDIM(self),self_s,dims_s);
     for(i=0;i<rank;i++) fprintf(stderr," %"NPY_INTP_FMT,dims[i]);
     fprintf(stderr,")\n");
 #endif
     if (self_s != dims_s) {
-      fprintf(stderr,"afoo:arr_from_pyobj: expected rank-%d array but got rank-%d array with different size.\n",rank,self->nd);
+      fprintf(stderr,"afoo:arr_from_pyobj: expected rank-%d array but got rank-%d array with different size.\n",rank,PyArray_NDIM(self));
     goto capi_fail;
     }
     /*    self = (PyArrayObject *)PyArray_FromDimsAndDataAndDescr(rank,dims,self_cp->descr,\
 	  self_cp->data);*/
-    self = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, self_cp->descr,
+    self = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type,
+                                                 PyArray_DESCR(self_cp),
 						 rank, dims,
-						 NULL, self_cp->data,
-						 NPY_CARRAY, NULL);
+						 NULL, PyArray_DATA(self_cp),
+						 NPY_ARRAY_CARRAY, NULL);
 
     if (self == NULL)
       goto capi_fail;
     Py_INCREF(self_cp);
-    self->base = (PyObject *)self_cp;
+    PyArray_SetBaseObject(self, (PyObject *)self_cp);
   }
   for (i=0;i<rank;i++)
-    if (dims[i]>self->dimensions[i]) {
+    if (dims[i]>PyArray_DIM(self, i)) {
       fprintf(stderr,"afoo:arr_from_pyobj: %d-th dimension must be at least %"NPY_INTP_FMT" but got %"NPY_INTP_FMT".\n",\
-	      i+1,dims[i],self->dimensions[i]);
+	      i+1,dims[i],PyArray_DIM(self, i));
       goto capi_fail;
     }
   if (((PyObject *)self_cp != obj) && PyArray_Check(obj)) {
     if (copy_ND_array((PyArrayObject *)obj,self_cp)) {
       fprintf(stderr,"afoo:arr_from_pyobj: failed to copy object to rank-%d array with shape (",\
-	      self_cp->nd);
-      for(i=0;i<self_cp->nd;i++) fprintf(stderr,"%"NPY_INTP_FMT",",self_cp->dimensions[i]);
+	      PyArray_NDIM(self_cp));
+      for(i=0;i<PyArray_NDIM(self_cp);i++) fprintf(stderr,"%"NPY_INTP_FMT",",PyArray_DIM(self_cp, i));
       fprintf(stderr,")\n");
       PRINTPYOBJERR((PyObject *)self_cp);
       goto capi_fail;
@@ -317,10 +318,10 @@ static PyObject *cdd_Poly2PyTuple(dd_PolyhedraPtr poly) {
     A_Dims[1] = d;
     A_Dims[0] = m;
     b_Dims[0] = m;
-    py_A = arr_from_pyobj(PyArray_DOUBLE,A_Dims,2,Py_None);
-    py_b = arr_from_pyobj(PyArray_DOUBLE,b_Dims,1,Py_None);
-    A = (double *)(py_A->data);
-    b = (double *)(py_b->data);
+    py_A = arr_from_pyobj(NPY_DOUBLE,A_Dims,2,Py_None);
+    py_b = arr_from_pyobj(NPY_DOUBLE,b_Dims,1,Py_None);
+    A = (double *)PyArray_DATA(py_A);
+    b = (double *)PyArray_DATA(py_b);
     for (i=0; i < m; i++)
       for (j=0; j < d+1; j++)
 	if (j) A[i*d+j-1] = -dd_get_d(Ineq_dd->matrix[i][j]);
@@ -346,8 +347,8 @@ static PyObject *cdd_Poly2PyTuple(dd_PolyhedraPtr poly) {
     m = Gen_dd->rowsize;
     Gen_Dims[0] = m;
     Gen_Dims[1] = d;
-    py_Gen = arr_from_pyobj(PyArray_DOUBLE,Gen_Dims,2,Py_None);
-    Gen = (double *)(py_Gen->data);
+    py_Gen = arr_from_pyobj(NPY_DOUBLE,Gen_Dims,2,Py_None);
+    Gen = (double *)PyArray_DATA(py_Gen);
     IsVertex_py = PyList_New(0);
     for (i=0; i < m; i++) {
       PyList_Append(IsVertex_py,PyLong_FromLong((int)dd_get_d(Gen_dd->matrix[i][0])));
@@ -430,25 +431,25 @@ static PyObject *cdd_hrep(PyObject *self, PyObject *args, PyObject *kws) {
   if (!PyArg_ParseTupleAndKeywords(args,kws,
 				   "O|OO:_cdd.hrep",kwlist,&A_py,&b_py,&eq_py))
     goto fail;
-  py_A = arr_from_pyobj(PyArray_DOUBLE,A_Dims,2,A_py);
+  py_A = arr_from_pyobj(NPY_DOUBLE,A_Dims,2,A_py);
   if (py_A == NULL) {
     PyErr_SetString(cdd_error,"failed in converting `A' to C array" );
     goto fail;
   }
-  A = (double *)(py_A->data);
+  A = (double *)PyArray_DATA(py_A);
 
   if (b_py == Py_None)
-    b_Dims[0] = py_A->dimensions[0];
-  py_b = arr_from_pyobj(PyArray_DOUBLE,b_Dims,1,b_py);
+    b_Dims[0] = PyArray_DIM(py_A, 0);
+  py_b = arr_from_pyobj(NPY_DOUBLE,b_Dims,1,b_py);
   if (py_b == NULL) {
     PyErr_SetString(cdd_error,"failed in converting `b' to C array" );
     goto fail;
   }
-  b = (double *)(py_b->data);
+  b = (double *)PyArray_DATA(py_b);
   
-  m = py_A->dimensions[0];
-  d = py_A->dimensions[1];
-  if (m!=py_b->dimensions[0]) {
+  m = PyArray_DIM(py_A, 0);
+  d = PyArray_DIM(py_A, 1);
+  if (m!=PyArray_DIM(py_b, 0)) {
     PyErr_SetString(cdd_error,"mismatch of `A' and `b' lengths");
     goto fail;
   }
@@ -466,13 +467,13 @@ static PyObject *cdd_hrep(PyObject *self, PyObject *args, PyObject *kws) {
       dd_set(Ineq_dd->matrix[i][j],value);
     }
   if (eq_py!=Py_None) {
-    py_eq = arr_from_pyobj(PyArray_INT,eq_Dims,1,eq_py);
+    py_eq = arr_from_pyobj(NPY_INT,eq_Dims,1,eq_py);
     if (py_eq == NULL) {
       PyErr_SetString(cdd_error,"failed in converting `eq' to C array" );
       goto fail;
     }
-    eq = (int *)(py_eq->data);
-    for (i=0; i<py_eq->dimensions[0]; i++) {
+    eq = (int *)PyArray_DATA(py_eq);
+    for (i=0; i<PyArray_DIM(py_eq, 0); i++) {
       if (eq[i]<0) eq[i] += m;
       if ((eq[i]<0)||(eq[i]>=m))
 	printf("there is inconsistencies in equality setting (0<=(eq[%i]=%i)<m=%i)\n",i,eq[i],m);
@@ -491,9 +492,9 @@ static PyObject *cdd_hrep(PyObject *self, PyObject *args, PyObject *kws) {
  fail:
   if (poly!=NULL) dd_FreePolyhedra(poly);
   if (Ineq_dd!=NULL) dd_FreeMatrix(Ineq_dd);
-  if (py_A!=NULL) {Py_XDECREF(py_A->base); }
+  if (py_A!=NULL) {Py_XDECREF(PyArray_BASE(py_A)); }
   Py_XDECREF(py_A);
-  if (py_b!=NULL) {Py_XDECREF(py_b->base); }
+  if (py_b!=NULL) {Py_XDECREF(PyArray_BASE(py_b)); }
   Py_XDECREF(py_b);
   if (py_eq!=NULL) {Py_XDECREF(py_eq); /* ??????? */ }
   return buildvalue;
@@ -530,27 +531,27 @@ static PyObject *cdd_vrep(PyObject *self, PyObject *args, PyObject *kws) {
 				   "O|OO:_cdd.vrep",kwlist,&Gen_py,&GenRay_py,&fr_py))
     goto fail;
 
-  py_Gen = arr_from_pyobj(PyArray_DOUBLE,Gen_Dims,2,Gen_py);
+  py_Gen = arr_from_pyobj(NPY_DOUBLE,Gen_Dims,2,Gen_py);
   if (py_Gen == NULL) {
     PyErr_SetString(cdd_error,"failed in converting `v' to C array" );
     goto fail;
   }
-  Gen = (double *)(py_Gen->data);
+  Gen = (double *)PyArray_DATA(py_Gen);
 
   if (GenRay_py==Py_None) GenRay_Dims[0] = 0;
-  GenRay_Dims[1] = py_Gen->dimensions[1];
+  GenRay_Dims[1] = PyArray_DIM(py_Gen, 1);
   
-  py_GenRay = arr_from_pyobj(PyArray_DOUBLE,GenRay_Dims,2,GenRay_py);
+  py_GenRay = arr_from_pyobj(NPY_DOUBLE,GenRay_Dims,2,GenRay_py);
   if (py_GenRay == NULL) {
     PyErr_SetString(cdd_error,"failed in converting `r' to C array" );
     goto fail;
   }
-  GenRay = (double *)(py_GenRay->data);
+  GenRay = (double *)PyArray_DATA(py_GenRay);
 
-  n = py_Gen->dimensions[0];
-  s = py_GenRay->dimensions[0];
+  n = PyArray_DIM(py_Gen, 0);
+  s = PyArray_DIM(py_GenRay, 0);
   m = n + s;
-  d = py_Gen->dimensions[1];
+  d = PyArray_DIM(py_Gen, 1);
 
   Gen_dd=dd_CreateMatrix(m, d+1);
   Gen_dd->representation=Generator;
@@ -570,13 +571,13 @@ static PyObject *cdd_vrep(PyObject *self, PyObject *args, PyObject *kws) {
     }
 
   if (fr_py!=Py_None) {
-    py_fr = arr_from_pyobj(PyArray_INT,fr_Dims,1,fr_py);
+    py_fr = arr_from_pyobj(NPY_INT,fr_Dims,1,fr_py);
     if (py_fr == NULL) {
       PyErr_SetString(cdd_error,"failed in converting `fr' to C array" );
       goto fail;
     }
-    fr = (int *)(py_fr->data);
-    for (i=0; i<py_fr->dimensions[0]; i++) {
+    fr = (int *)PyArray_DATA(py_fr);
+    for (i=0; i<PyArray_DIM(py_fr, 0); i++) {
       if (fr[i]<0) fr[i] += m;
       if ((fr[i]<0)||(fr[i]>=m))
 	printf("there is inconsistencies in free setting (0<=(fr[%i]=%i)<m=%i)\n",i,fr[i],m);
@@ -595,9 +596,9 @@ static PyObject *cdd_vrep(PyObject *self, PyObject *args, PyObject *kws) {
  fail:
   if (poly!=NULL) dd_FreePolyhedra(poly);
   if (Gen_dd!=NULL) dd_FreeMatrix(Gen_dd);
-  if (py_Gen!=NULL) {Py_XDECREF(py_Gen->base);}
+  if (py_Gen!=NULL) {Py_XDECREF(PyArray_BASE(py_Gen));}
   Py_XDECREF(py_Gen);
-  if (py_GenRay!=NULL) {Py_XDECREF(py_GenRay->base);}
+  if (py_GenRay!=NULL) {Py_XDECREF(PyArray_BASE(py_GenRay));}
   Py_XDECREF(py_GenRay);
   if (py_fr!=NULL) {Py_XDECREF(py_fr); /* ??????? */}
   return buildvalue;
