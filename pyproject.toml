@@ -4,3 +4,13 @@ requires = [
   'numpy >= 2.0'
 ]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest >= 8.0.0",
+    "ruff >= 0.3.0",
+]
+
+[tool.pytest]
+testpaths = ["test"]
+addopts = ["--import-mode=importlib"]
